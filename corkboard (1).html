@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Corkboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cork: #a9764f;
+    --cork-dark: #8a5f3d;
+    --card: #fbf3e1;
+    --card-edge: #efe3c8;
+    --ink: #2b2118;
+    --ink-soft: #6b5a45;
+    --pin-red: #c1443c;
+    --pin-green: #4b6b4e;
+    --pin-mustard: #d9a441;
+    --pin-blue: #3f5f74;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(0,0,0,0.08), transparent 45%),
+      var(--cork);
+    background-blend-mode:overlay;
+    color:var(--ink);
+    min-height:100vh;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.35;
+    background-image:
+      radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1.3px);
+    background-size:6px 6px;
+    mix-blend-mode:multiply;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:28px 18px 80px;
+    position:relative;
+  }
+  header{
+    text-align:center;
+    margin-bottom:22px;
+    padding-bottom:18px;
+  }
+  header h1{
+    font-family:'Special Elite',cursive;
+    font-size:2.1rem;
+    letter-spacing:1px;
+    margin:0;
+    color:#fff8ec;
+    text-shadow:0 2px 0 rgba(0,0,0,0.25);
+  }
+  header p{
+    font-family:'Courier Prime',monospace;
+    color:#fff2dc;
+    opacity:0.85;
+    margin:6px 0 0;
+    font-size:0.85rem;
+    letter-spacing:0.5px;
+  }
+  .thumbtack{
+    width:14px;height:14px;border-radius:50%;
+    margin:0 auto 10px;
+    background:radial-gradient(circle at 35% 30%, #fff 0%, var(--pin-mustard) 40%, #a97620 100%);
+    box-shadow:0 3px 4px rgba(0,0,0,0.4);
+  }
+
+  .composer{
+    background:var(--card);
+    border:1px solid var(--card-edge);
+    border-radius:3px;
+    padding:18px 18px 14px;
+    box-shadow:0 10px 18px -6px rgba(0,0,0,0.35), 0 2px 0 rgba(255,255,255,0.15) inset;
+    position:relative;
+    margin:0 auto 40px;
+    transform:rotate(-0.6deg);
+  }
+  .composer .pin{
+    position:absolute; top:-11px; left:50%; transform:translateX(-50%);
+  }
+  .composer textarea{
+    width:100%;
+    border:none;
+    background:transparent;
+    resize:none;
+    font-family:'Courier Prime',monospace;
+    font-size:0.98rem;
+    color:var(--ink);
+    min-height:56px;
+    outline:none;
+    line-height:1.5;
+  }
+  .composer textarea::placeholder{color:var(--ink-soft);}
+  .composer-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-top:1px dashed var(--card-edge);
+    margin-top:8px;
+    padding-top:10px;
+  }
+  .composer-footer select{
+    font-family:'Inter',sans-serif;
+    font-size:0.78rem;
+    border:1px solid var(--card-edge);
+    background:#fff;
+    border-radius:20px;
+    padding:4px 10px;
+    color:var(--ink-soft);
+  }
+  .pin-btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:0.85rem;
+    background:var(--pin-red);
+    color:#fff8ec;
+    border:none;
+    border-radius:20px;
+    padding:8px 18px;
+    cursor:pointer;
+    box-shadow:0 3px 6px rgba(0,0,0,0.25);
+    transition:transform .1s ease;
+  }
+  .pin-btn:hover{transform:translateY(-1px);}
+  .pin-btn:active{transform:translateY(1px);}
+  .pin-btn:disabled{opacity:0.5;cursor:default;}
+
+  .board{
+    display:flex;
+    flex-direction:column;
+    gap:34px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:2px;
+    padding:20px 20px 14px;
+    position:relative;
+    box-shadow:0 14px 22px -10px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.2) inset;
+    animation:drop .35s ease;
+  }
+  @keyframes drop{
+    from{opacity:0; transform:translateY(-14px) scale(0.98);}
+    to{opacity:1; transform:translateY(0) scale(1);}
+  }
+  .card::after{
+    content:"";
+    position:absolute; left:14px; right:14px; bottom:-6px; height:10px;
+    background:rgba(0,0,0,0.18);
+    filter:blur(4px);
+    border-radius:50%;
+    z-index:-1;
+  }
+  .pin{
+    position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+    width:16px; height:16px; border-radius:50%;
+    box-shadow:0 3px 5px rgba(0,0,0,0.45);
+  }
+  .pin.red{background:radial-gradient(circle at 35% 30%, #fff 0%, var(--pin-red) 42%, #7c2620 100%);}
+  .pin.green{background:radial-gradient(circle at 35% 30%, #fff 0%, var(--pin-green) 42%, #253c27 100%);}
+  .pin.mustard{background:radial-gradient(circle at 35% 30%, #fff 0%, var(--pin-mustard) 42%, #8a5f14 100%);}
+  .pin.blue{background:radial-gradient(circle at 35% 30%, #fff 0%, var(--pin-blue) 42%, #1f333f 100%);}
+
+  .card-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:10px;
+  }
+  .avatar{
+    width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Special Elite',cursive;
+    font-size:0.85rem;
+    color:#fff8ec;
+    flex-shrink:0;
+  }
+  .who{display:flex; flex-direction:column;}
+  .who .name{font-weight:600; font-size:0.92rem;}
+  .who .meta{font-size:0.72rem; color:var(--ink-soft); font-family:'Courier Prime',monospace;}
+
+  .card-body{
+    font-size:0.98rem;
+    line-height:1.55;
+    color:var(--ink);
+    white-space:pre-wrap;
+  }
+  .card-photo{
+    margin-top:12px;
+    height:150px;
+    border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:2.4rem;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+
+  .card-actions{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-top:14px;
+    padding-top:10px;
+    border-top:1px dashed var(--card-edge);
+  }
+  .action-btn{
+    background:none;
+    border:none;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'Inter',sans-serif;
+    font-size:0.82rem;
+    color:var(--ink-soft);
+    padding:4px 2px;
+  }
+  .action-btn .heart{font-size:1rem;}
+  .action-btn.liked{color:var(--pin-red); font-weight:600;}
+  .action-btn.liked .heart{transform:scale(1.15);}
+
+  .comments{
+    margin-top:10px;
+    display:none;
+    flex-direction:column;
+    gap:8px;
+  }
+  .comments.open{display:flex;}
+  .comment{
+    background:rgba(0,0,0,0.035);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:0.85rem;
+  }
+  .comment b{font-size:0.8rem;}
+  .comment-input-row{
+    display:flex;
+    gap:8px;
+    margin-top:2px;
+  }
+  .comment-input-row input{
+    flex:1;
+    border:1px solid var(--card-edge);
+    border-radius:20px;
+    padding:7px 12px;
+    font-family:'Inter',sans-serif;
+    font-size:0.82rem;
+    outline:none;
+  }
+  .comment-input-row button{
+    border:none;
+    background:var(--ink);
+    color:var(--card);
+    border-radius:20px;
+    padding:0 14px;
+    font-size:0.8rem;
+    cursor:pointer;
+  }
+
+  .empty-note{
+    text-align:center;
+    font-family:'Courier Prime',monospace;
+    color:#fff2dc;
+    opacity:0.7;
+    margin-top:40px;
+    font-size:0.9rem;
+  }
+
+  @media(max-width:420px){
+    header h1{font-size:1.7rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="thumbtack"></div>
+    <h1>The Corkboard</h1>
+    <p id="statusLine">loading…</p>
+  </header>
+
+  <div class="composer" id="composer">
+    <div class="pin" id="composerPin"></div>
+    <input type="text" id="composeName" placeholder="Your name" maxlength="30" style="width:100%;border:none;background:transparent;font-family:'Inter',sans-serif;font-weight:600;font-size:0.88rem;color:var(--ink);outline:none;margin-bottom:6px;">
+    <textarea id="composeText" placeholder="What's worth pinning today?" maxlength="280"></textarea>
+    <div class="composer-footer">
+      <select id="composeMood">
+        <option value="">no photo</option>
+        <option value="🌤️">sky</option>
+        <option value="☕">coffee</option>
+        <option value="🌱">plant</option>
+        <option value="📚">book</option>
+        <option value="🏔️">mountain</option>
+        <option value="🎧">music</option>
+      </select>
+      <button class="pin-btn" id="postBtn">Pin it</button>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div class="empty-note" id="emptyNote" style="display:none;">Nothing pinned yet. Be the first.</div>
+</div>
+
+<script>
+// No setup needed — this board uses storage built into Claude itself.
+// Anyone who opens this artifact shares the same board automatically.
+
+let posts = [];
+let likedLocally = [];
+let myName = '';
+let pollTimer = null;
+
+const AVATAR_COLORS = ['#c1443c','#4b6b4e','#d9a441','#3f5f74','#8a5f9c','#b0643f'];
+const PIN_CLASSES = ['red','green','mustard','blue'];
+
+function initials(name){
+  return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+function colorFor(name){
+  let h=0; for(const c of name) h = (h*31 + c.charCodeAt(0)) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[h];
+}
+function pinFor(id){
+  let h = 0;
+  for(const c of String(id)) h = (h*31 + c.charCodeAt(0)) % PIN_CLASSES.length;
+  return PIN_CLASSES[h];
+}
+function timeAgo(ts){
+  if(!ts) return 'just now';
+  const secs = Math.floor((Date.now() - ts) / 1000);
+  if(secs < 60) return 'just now';
+  if(secs < 3600) return Math.floor(secs/60) + 'm ago';
+  if(secs < 86400) return Math.floor(secs/3600) + 'h ago';
+  return Math.floor(secs/86400) + 'd ago';
+}
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function render(){
+  const board = document.getElementById('board');
+  const empty = document.getElementById('emptyNote');
+  board.innerHTML = '';
+  empty.style.display = posts.length ? 'none' : 'block';
+
+  posts.forEach((p, idx) => {
+    const rotate = (idx % 2 === 0 ? -1 : 1) * (0.4 + (idx % 3) * 0.35);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.transform = `rotate(${rotate}deg)`;
+
+    const liked = likedLocally.includes(p.id);
+    const photoHtml = p.photo ? `<div class="card-photo" style="background:${colorFor(p.name)}22;">${p.photo}</div>` : '';
+
+    const commentsHtml = (p.comments || []).map(c => `
+      <div class="comment"><b>${escapeHtml(c.name)}</b> &nbsp;${escapeHtml(c.text)}</div>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="pin ${pinFor(p.id)}"></div>
+      <div class="card-head">
+        <div class="avatar" style="background:${colorFor(p.name)};">${initials(p.name)}</div>
+        <div class="who">
+          <span class="name">${escapeHtml(p.name)}</span>
+          <span class="meta">${timeAgo(p.timeMs)}</span>
+        </div>
+      </div>
+      <div class="card-body">${escapeHtml(p.text)}</div>
+      ${photoHtml}
+      <div class="card-actions">
+        <button class="action-btn ${liked ? 'liked' : ''}" data-action="like" data-id="${p.id}">
+          <span class="heart">${liked ? '♥' : '♡'}</span> <span>${p.likes || 0}</span>
+        </button>
+        <button class="action-btn" data-action="toggle-comments" data-id="${p.id}">
+          💬 <span>${(p.comments || []).length}</span>
+        </button>
+      </div>
+      <div class="comments" id="comments-${p.id}">
+        ${commentsHtml}
+        <div class="comment-input-row">
+          <input type="text" placeholder="Add a comment..." maxlength="140" data-id="${p.id}" class="comment-input">
+          <button data-action="send-comment" data-id="${p.id}">Send</button>
+        </div>
+      </div>
+    `;
+    board.appendChild(card);
+  });
+
+  document.querySelectorAll('[data-action="like"]').forEach(btn=>{
+    btn.addEventListener('click', ()=> toggleLike(btn.dataset.id));
+  });
+  document.querySelectorAll('[data-action="toggle-comments"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.getElementById(`comments-${btn.dataset.id}`).classList.toggle('open');
+    });
+  });
+  document.querySelectorAll('[data-action="send-comment"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const input = document.querySelector(`.comment-input[data-id="${btn.dataset.id}"]`);
+      const text = input.value.trim();
+      if(!text) return;
+      input.value = '';
+      sendComment(btn.dataset.id, text);
+    });
+  });
+  document.querySelectorAll('.comment-input').forEach(inp=>{
+    inp.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        document.querySelector(`[data-action="send-comment"][data-id="${inp.dataset.id}"]`).click();
+      }
+    });
+  });
+}
+
+// ---- shared board storage (everyone who opens this sees the same data) ----
+async function fetchSharedPosts(){
+  try{
+    const result = await window.storage.get('corkboard:posts', true);
+    return result && result.value ? JSON.parse(result.value) : [];
+  }catch(e){
+    return [];
+  }
+}
+async function mutatePosts(mutatorFn){
+  const current = await fetchSharedPosts();
+  const updated = mutatorFn(current);
+  posts = updated;
+  render();
+  try{
+    await window.storage.set('corkboard:posts', JSON.stringify(updated), true);
+  }catch(e){ console.error('save failed', e); }
+}
+async function refreshFromServer(){
+  posts = await fetchSharedPosts();
+  document.getElementById('statusLine').textContent = 'live — everyone sees this board';
+  render();
+}
+
+// ---- personal, per-visitor data (just this browser's own view) ----
+async function loadPersonal(){
+  try{
+    const r = await window.storage.get('corkboard:my-liked', false);
+    likedLocally = r && r.value ? JSON.parse(r.value) : [];
+  }catch(e){ likedLocally = []; }
+  try{
+    const r = await window.storage.get('corkboard:my-name', false);
+    myName = r && r.value ? r.value : '';
+  }catch(e){ myName = ''; }
+}
+async function saveLikedLocally(){
+  try{ await window.storage.set('corkboard:my-liked', JSON.stringify(likedLocally), false); }catch(e){}
+}
+
+async function toggleLike(id){
+  const alreadyLiked = likedLocally.includes(id);
+  const delta = alreadyLiked ? -1 : 1;
+  if(alreadyLiked) likedLocally.splice(likedLocally.indexOf(id), 1);
+  else likedLocally.push(id);
+  saveLikedLocally();
+  await mutatePosts(current => current.map(p => p.id === id ? {...p, likes: (p.likes || 0) + delta} : p));
+}
+
+async function sendComment(id, text){
+  const name = myName || 'Someone';
+  await mutatePosts(current => current.map(p =>
+    p.id === id ? {...p, comments: [...(p.comments || []), {name, text}]} : p
+  ));
+  const el = document.getElementById(`comments-${id}`);
+  if(el) el.classList.add('open');
+}
+
+document.getElementById('postBtn').addEventListener('click', async ()=>{
+  const textEl = document.getElementById('composeText');
+  const moodEl = document.getElementById('composeMood');
+  const nameEl = document.getElementById('composeName');
+  const text = textEl.value.trim();
+  const name = nameEl.value.trim() || 'Someone';
+  if(!text) return;
+  myName = name;
+  try{ await window.storage.set('corkboard:my-name', name, false); }catch(e){}
+
+  const newPost = {
+    id: 'p-' + Date.now() + '-' + Math.random().toString(36).slice(2,8),
+    name, text,
+    photo: moodEl.value || '',
+    likes: 0,
+    comments: [],
+    timeMs: Date.now()
+  };
+  textEl.value = '';
+  moodEl.value = '';
+  await mutatePosts(current => [newPost, ...current]);
+});
+
+async function init(){
+  await loadPersonal();
+  document.getElementById('composeName').value = myName;
+  await refreshFromServer();
+  pollTimer = setInterval(refreshFromServer, 4000);
+}
+init();
+</script>
+</body>
+</html>
